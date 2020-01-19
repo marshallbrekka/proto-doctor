@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	pbdoctor "github.com/marshallbrekka/protobuf-doctor"
@@ -30,6 +31,24 @@ func (d Dr) Mutate(f *pbdoctor.Field) *pbdoctor.Field {
 	} else {
 		fmt.Printf("field: %d, type: %d, length: %d, value: %x\n", n, ft, len(data), data)
 	}
+	if f.Number == 3 {
+		data := make([]byte, 0)
+		data = append(data, f.Data...)
+		return &pbdoctor.Field{
+			// list value is 7
+			Number: 6,
+			Type:   2,
+			Data: pbdoctor.Field{
+				Number: 1,
+				Type:   2,
+				Data: pbdoctor.Field{
+					Number: f.Number,
+					Type:   f.Type,
+					Data:   append(data, []byte(" more")...),
+				}.Serialize(),
+			}.Serialize(),
+		}
+	}
 	return nil
 }
 
@@ -41,45 +60,29 @@ func main() {
 					StringValue: "string value",
 				},
 			},
-			"lst": &structpb.Value{
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							&structpb.Value{
-								Kind: &structpb.Value_StringValue{
-									StringValue: "list value",
-								},
-							},
-						},
-					},
-				},
-			},
 		},
 	}
 
 	data, _ := proto.Marshal(test)
-	fmt.Printf("%x\n", data)
+	fmt.Printf("org: %x\n", data)
+	spew.Dump(test)
 	mutator := Dr{
 		Sub: map[byte]Dr{
 			// Field 1 is Struct.fields
 			1: Dr{
 				Sub: map[byte]Dr{
 					// Field 2 is the value of a map field (Value type)
-					2: Dr{
-						Sub: map[byte]Dr{
-							// Field 6 is Value.list_value
-							6: Dr{
-								Sub: map[byte]Dr{
-									// Field 1 is Value.values
-									// At this point we are back at a Value type.
-									1: Dr{},
-								},
-							},
-						},
-					},
+					2: Dr{},
 				},
 			},
 		},
 	}
-	pbdoctor.Doctor(mutator, data)
+	mutated := pbdoctor.Doctor(mutator, data)
+	fmt.Printf("mut: %x\n", mutated)
+
+	err := proto.Unmarshal(mutated, test)
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(test)
 }
