@@ -1,5 +1,7 @@
 package pbdoctor
 
+import "github.com/golang/protobuf/proto"
+
 // Represents a serialized proto field.
 //
 // Example:
@@ -27,6 +29,18 @@ type Field struct {
 
 	// The serialized form of the field.
 	Data []byte
+}
+
+func (f Field) Serialize() []byte {
+	result := make([]byte, 0, len(f.Data)+1)
+	result = append(result, EncodeTag(f.Number, f.Type))
+
+	// if its length delim, then write the length and then the data.
+	// Otherwise we just write the data.
+	if f.Type == 2 {
+		result = append(result, proto.EncodeVarint(uint64(len(f.Data)))...)
+	}
+	return append(result, f.Data...)
 }
 
 type Mutator interface {

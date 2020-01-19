@@ -7,27 +7,37 @@ import (
 )
 
 func Doctor(mutator Mutator, data []byte) []byte {
-	// TODO: actually allow mutations
-	iterateFieldsDr(data, mutator)
-	return data
+	return iterateFieldsDr(data, mutator)
 }
 
-func iterateFieldsDr(data []byte, dr Mutator) {
+func iterateFieldsDr(data []byte, dr Mutator) []byte {
+	result := make([]byte, 0, len(data))
+	var field *Field
+
 	for i := 0; i < len(data); {
 		//		fmt.Printf("starting with i %d, len: %d\n", i, len(data))
+		field = nil
 		number, typ := ParseTag(data[i])
 		var length int
+		var value []byte
 		switch typ {
-
 		case 0:
 			// varint
 			length = varIntLength(data[i+1:])
-			dr.Mutate(&Field{number, typ, data[i+1 : i+1+length]})
+			value = data[i+1 : i+1+length]
+			field = dr.Mutate(&Field{number, typ, value})
 
 		case 1:
 			// 64bit
 			length = 8
-			dr.Mutate(&Field{number, typ, data[i+1 : i+1+length]})
+			value = data[i+1 : i+1+length]
+			field = dr.Mutate(&Field{number, typ, value})
+
+		case 5:
+			// 32bit
+			length = 4
+			value = data[i+1 : i+1+length]
+			field = dr.Mutate(&Field{number, typ, value})
 
 		case 2:
 			// length delim
@@ -36,24 +46,32 @@ func iterateFieldsDr(data []byte, dr Mutator) {
 			if length == 0 {
 				panic(fmt.Errorf("zero length varint"))
 			}
-			subData := data[i+1+length : i+1+int(vi)+length]
+			value = data[i+1+length : i+1+int(vi)+length]
 
 			subDr := dr.MessageMutator(number)
 			if subDr == nil {
-				dr.Mutate(&Field{number, typ, subData})
+				field = dr.Mutate(&Field{number, typ, value})
 			} else {
-				iterateFieldsDr(subData, subDr)
+				field = &Field{
+					Number: number,
+					Type:   typ,
+					Data:   iterateFieldsDr(value, subDr),
+				}
 			}
 			length = length + int(vi)
-
-		case 5:
-			// 32bit
-
-			length = 4
-			dr.Mutate(&Field{number, typ, data[i+1 : i+1+length]})
 		}
 		i = i + length + 1
+
+		if field == nil {
+			field = &Field{
+				Number: number,
+				Type:   typ,
+				Data:   value,
+			}
+		}
+		result = append(result, field.Serialize()...)
 	}
+	return result
 }
 
 // Given the proto tag, returns the field number and wire type.
