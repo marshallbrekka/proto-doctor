@@ -5,14 +5,14 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	doctor "github.com/marshallbrekka/protobuf-doctor"
+	pbdoctor "github.com/marshallbrekka/protobuf-doctor"
 )
 
 type Dr struct {
 	Sub map[byte]Dr
 }
 
-func (d Dr) MessageMutator(n byte) doctor.Mutator {
+func (d Dr) MessageMutator(n byte) pbdoctor.Mutator {
 	s, ok := d.Sub[n]
 	if ok {
 		fmt.Printf("sub field: %d\n", n)
@@ -21,7 +21,7 @@ func (d Dr) MessageMutator(n byte) doctor.Mutator {
 	return nil
 }
 
-func (d Dr) Mutate(f *doctor.Field) *doctor.Field {
+func (d Dr) Mutate(f *pbdoctor.Field) *pbdoctor.Field {
 	n := f.Number
 	ft := f.Type
 	data := f.Data
@@ -81,5 +81,5 @@ func main() {
 			},
 		},
 	}
-	doctor.Doctor(mutator, data)
+	pbdoctor.Doctor(mutator, data)
 }
