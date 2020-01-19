@@ -9,19 +9,28 @@ import (
 )
 
 func TestDoctor(t *testing.T) {
+	// This will transform the following serialized proto from
+	// Value{ string_value = "string value" }
+	//
+	// into
+	// Value{
+	//   list_value = ListValue{
+	//     values = [
+	//       Value{ string_value = "string value" }
+	//   ]
+	// }
 	input := &structpb.Value{
 		Kind: &structpb.Value_StringValue{
 			StringValue: "string value",
 		},
 	}
-	output := &structpb.Value{}
 	expected := &structpb.Value{
 		Kind: &structpb.Value_ListValue{
 			ListValue: &structpb.ListValue{
 				Values: []*structpb.Value{
 					&structpb.Value{
 						Kind: &structpb.Value_StringValue{
-							StringValue: "string valuu",
+							StringValue: "string value",
 						},
 					},
 				},
@@ -30,8 +39,9 @@ func TestDoctor(t *testing.T) {
 	}
 
 	data, _ := proto.Marshal(input)
-	mutated := Doctor(mutator, Dr{})
+	mutated := Doctor(data, Dr{})
 
+	output := &structpb.Value{}
 	err := proto.Unmarshal(mutated, output)
 
 	if err != nil {

@@ -77,7 +77,7 @@ func main() {
 			},
 		},
 	}
-	mutated := pbdoctor.Doctor(mutator, data)
+	mutated := pbdoctor.Doctor(data, mutator)
 	fmt.Printf("mut: %x\n", mutated)
 
 	err := proto.Unmarshal(mutated, test)

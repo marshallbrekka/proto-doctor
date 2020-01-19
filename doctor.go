@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func Doctor(mutator Mutator, data []byte) []byte {
+func Doctor(data []byte, mutator Mutator) []byte {
 	return iterateFieldsDr(data, mutator)
 }
 
