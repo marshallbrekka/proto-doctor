@@ -7,17 +7,17 @@ import "github.com/golang/protobuf/proto"
 // Example:
 // Given the proto structure
 //
-// message MyMessage {
-//   string name = 4;
-// }
+//   message MyMessage {
+//     string name = 4;
+//   }
 //
 // If serialized with name = "John"
 //
-// Field{
-//   Number: 4,
-//   Type: 2,
-//   Data: []byte("John"),
-// }
+//   Field{
+//     Number: 4,
+//     Type: 2,
+//     Data: []byte("John"),
+//   }
 type Field struct {
 	// The field number is what is specified in the .proto file.
 	Number byte
