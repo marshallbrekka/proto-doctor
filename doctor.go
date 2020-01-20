@@ -1,8 +1,6 @@
 package pbdoctor
 
 import (
-	"fmt"
-
 	"github.com/golang/protobuf/proto"
 )
 
@@ -14,59 +12,28 @@ func iterateFieldsDr(data []byte, dr Mutator) []byte {
 	result := make([]byte, 0, len(data))
 	var field *Field
 
-	for i := 0; i < len(data); {
-		field = nil
-		number, typ := ParseTag(data[i])
-		var length int
-		var value []byte
-		switch typ {
-		case 0:
-			// varint
-			length = varIntLength(data[i+1:])
-			value = data[i+1 : i+1+length]
-			field = dr.Mutate(&Field{number, typ, value})
-
-		case 1:
-			// 64bit
-			length = 8
-			value = data[i+1 : i+1+length]
-			field = dr.Mutate(&Field{number, typ, value})
-
-		case 5:
-			// 32bit
-			length = 4
-			value = data[i+1 : i+1+length]
-			field = dr.Mutate(&Field{number, typ, value})
-
-		case 2:
-			// length delim
-			var vi uint64
-			vi, length = proto.DecodeVarint(data[i+1:])
-			if length == 0 {
-				panic(fmt.Errorf("zero length varint"))
-			}
-			value = data[i+1+length : i+1+int(vi)+length]
-
-			subDr := dr.MessageMutator(number)
-			if subDr == nil {
-				field = dr.Mutate(&Field{number, typ, value})
-			} else {
-				field = &Field{
-					Number: number,
-					Type:   typ,
-					Data:   iterateFieldsDr(value, subDr),
-				}
-			}
-			length = length + int(vi)
+	buffer := NewBuffer(data)
+	for {
+		f, read := buffer.ReadField()
+		if read == 0 {
+			break
 		}
-		i = i + length + 1
 
-		if field == nil {
-			field = &Field{
-				Number: number,
-				Type:   typ,
-				Data:   value,
+		if f.Type == proto.WireBytes {
+			subDr := dr.MessageMutator(f.Number)
+			if subDr != nil {
+				field = &Field{
+					Number: f.Number,
+					Type:   f.Type,
+					Data:   iterateFieldsDr(f.Data, subDr),
+				}
+			} else {
+				field = dr.Mutate(f)
 			}
+		}
+		field = dr.Mutate(f)
+		if field == nil {
+			field = f
 		}
 		result = append(result, field.Serialize()...)
 	}
