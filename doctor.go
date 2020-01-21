@@ -71,7 +71,8 @@ func iterateFieldsDr(data []byte, dr Mutator) ([]byte, error) {
 	return result, nil
 }
 
-// Given the proto tag, returns the field number and wire type.
+// Given a byte array reads a varint and returns the field number, wire type,
+// and the number of bytes read.
 //
 // https://developers.google.com/protocol-buffers/docs/encoding#structure
 //
@@ -79,12 +80,16 @@ func iterateFieldsDr(data []byte, dr Mutator) ([]byte, error) {
 // (field_number << 3) | wire_type
 // in other words, the last three bits of the number store the wire type.
 // (field_number << 3) | wire_type
-func ParseTag(tag byte) (byte, byte) {
-	return tag >> 3, tag & 0x7
+func ParseTag(b []byte) (uint64, byte, int) {
+	x, n := proto.DecodeVarint(b)
+	if n == 0 {
+		return 0, 0, 0
+	}
+	return x >> 3, byte(x) & 0x7, n
 }
 
-func EncodeTag(fieldNumber, fieldType byte) byte {
-	return fieldNumber<<3 | fieldType
+func EncodeTag(fieldNumber uint64, fieldType byte) []byte {
+	return proto.EncodeVarint(fieldNumber<<3 | uint64(fieldType))
 }
 
 func varIntLength(data []byte) int {

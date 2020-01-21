@@ -22,31 +22,31 @@ func TestBufferErrors(t *testing.T) {
 
 		// Bad tag (7 is not a valid wire type)
 		{
-			Input: []byte{EncodeTag(1, 7)},
+			Input: EncodeTag(1, 7),
 			Error: errInternalBadWireType,
 		},
 
 		// Tag ony, missing any data
 		{
-			Input: []byte{EncodeTag(1, proto.WireVarint)},
+			Input: EncodeTag(1, proto.WireVarint),
 			Error: io.ErrUnexpectedEOF,
 		},
 
 		// fixed 32, but only 2 bytes
 		{
-			Input: []byte{EncodeTag(1, proto.WireFixed32), 1, 2},
+			Input: append(EncodeTag(1, proto.WireFixed32), 1, 2),
 			Error: io.ErrUnexpectedEOF,
 		},
 
 		// fixed 64, but only 4 bytes
 		{
-			Input: []byte{EncodeTag(1, proto.WireFixed64), 1, 2, 3, 4},
+			Input: append(EncodeTag(1, proto.WireFixed64), 1, 2, 3, 4),
 			Error: io.ErrUnexpectedEOF,
 		},
 
 		// WireBytes, but less than specified length
 		{
-			Input: []byte{EncodeTag(1, proto.WireBytes), varInt8[0], 1, 2, 3, 4, 5},
+			Input: append(EncodeTag(1, proto.WireBytes), varInt8[0], 1, 2, 3, 4, 5),
 			Error: io.ErrUnexpectedEOF,
 		},
 	}

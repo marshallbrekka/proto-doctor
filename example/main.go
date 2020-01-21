@@ -10,10 +10,10 @@ import (
 )
 
 type Dr struct {
-	Sub map[byte]Dr
+	Sub map[uint64]Dr
 }
 
-func (d Dr) MessageMutator(n byte) pbdoctor.Mutator {
+func (d Dr) MessageMutator(n uint64) pbdoctor.Mutator {
 	s, ok := d.Sub[n]
 	if ok {
 		fmt.Printf("sub field: %d\n", n)
@@ -67,10 +67,10 @@ func main() {
 	fmt.Printf("org: %x\n", data)
 	spew.Dump(test)
 	mutator := Dr{
-		Sub: map[byte]Dr{
+		Sub: map[uint64]Dr{
 			// Field 1 is Struct.fields
 			1: Dr{
-				Sub: map[byte]Dr{
+				Sub: map[uint64]Dr{
 					// Field 2 is the value of a map field (Value type)
 					2: Dr{},
 				},

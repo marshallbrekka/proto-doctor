@@ -30,13 +30,13 @@ func (b *Buffer) ReadField() (field *Field, read int, err error) {
 		return nil, 0, io.EOF
 	}
 
-	number, typ := ParseTag(b.data[b.read])
+	number, typ, read := ParseTag(b.data[b.read:])
 	var length int
 	var value []byte
 
-	// All fields are offset by minimum 1 (the tag).
-	// Length delim types are 1 + <varint>
-	startOffset := 1
+	// All fields are offset by the tag length.
+	// Length delim types are <tag> + <varint>
+	startOffset := read
 
 	switch typ {
 	case proto.WireVarint:
