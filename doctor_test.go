@@ -58,7 +58,7 @@ func TestDoctor(t *testing.T) {
 type Dr struct {
 }
 
-func (d Dr) MessageMutator(n byte) Mutator {
+func (d Dr) MessageMutator(n uint64) Mutator {
 	return nil
 }
 

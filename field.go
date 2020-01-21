@@ -20,7 +20,7 @@ import "github.com/golang/protobuf/proto"
 //   }
 type Field struct {
 	// The field number is what is specified in the .proto file.
-	Number byte
+	Number uint64
 
 	// Type can be one of 0-5.
 	// For more details see the encoding docs:
@@ -36,17 +36,18 @@ type Field struct {
 // For all other fields it is just <tag><data>
 func (f Field) Serialize() []byte {
 	var result []byte
+	tag := EncodeTag(f.Number, f.Type)
 
 	// If its length delim, then write the length and then the data.
 	// Otherwise we just write the data.
 	if f.Type == proto.WireBytes {
 		length := proto.EncodeVarint(uint64(len(f.Data)))
-		result = make([]byte, 0, 1+len(length)+len(f.Data))
-		result = append(result, EncodeTag(f.Number, f.Type))
+		result = make([]byte, 0, len(tag)+len(length)+len(f.Data))
+		result = append(result, tag...)
 		result = append(result, length...)
 	} else {
-		result = make([]byte, 0, 1+len(f.Data))
-		result = append(result, EncodeTag(f.Number, f.Type))
+		result = make([]byte, 0, len(tag)+len(f.Data))
+		result = append(result, tag...)
 	}
 	return append(result, f.Data...)
 }
