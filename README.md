@@ -24,13 +24,13 @@ message InternalInt32 {
 }
 
 
-message MyRPCRequest struct {
+message MyRPCRequest {
   InternalString field_a = 1;
   InternalString field_b = 2;
   InternalInt32 field_c = 3;
 }
 
-message MyRPCReply struct {
+message MyRPCReply {
   InternalString response_a = 1;
   InternalInt32 response_b = 2;
 }
@@ -106,14 +106,14 @@ message InternalString {
   string value = 1;
 }
 
-message MyRPCRequest struct {
+message MyRPCRequest {
   InternalString field_a = 3;
 }
 ```
 
 If these are the external protos:
 ```proto
-message MyRPCRequest struct {
+message MyRPCRequest {
   string field_a = 3;
 }
 ```
