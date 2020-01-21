@@ -10,7 +10,7 @@ import (
 var errInternalBadWireType = errors.New("proto: internal error: bad wiretype")
 
 // Iterates through a serialized protocol buffer field by field.
-// Decscending into sub-messages requires initializing a new
+// Descending into sub-messages requires initializing a new
 // buffer with just the sub-message bytes.
 type Buffer struct {
 	read int
