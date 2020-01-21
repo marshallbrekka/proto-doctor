@@ -6,7 +6,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	pbdoctor "github.com/marshallbrekka/protobuf-doctor"
+	pbdoctor "github.com/marshallbrekka/proto-doctor"
 )
 
 type Dr struct {

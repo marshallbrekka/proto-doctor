@@ -1,4 +1,4 @@
-module github.com/marshallbrekka/protobuf-doctor
+module github.com/marshallbrekka/proto-doctor
 
 go 1.13
 
