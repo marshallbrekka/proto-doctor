@@ -22,7 +22,7 @@ func (d Dr) MessageMutator(n byte) pbdoctor.Mutator {
 	return nil
 }
 
-func (d Dr) Mutate(f *pbdoctor.Field) *pbdoctor.Field {
+func (d Dr) Mutate(f *pbdoctor.Field) (*pbdoctor.Field, error) {
 	n := f.Number
 	ft := f.Type
 	data := f.Data
@@ -47,9 +47,9 @@ func (d Dr) Mutate(f *pbdoctor.Field) *pbdoctor.Field {
 					Data:   append(data, []byte(" more")...),
 				}.Serialize(),
 			}.Serialize(),
-		}
+		}, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func main() {
@@ -77,7 +77,7 @@ func main() {
 			},
 		},
 	}
-	mutated := pbdoctor.Doctor(data, mutator)
+	mutated, _ := pbdoctor.Doctor(data, mutator)
 	fmt.Printf("mut: %x\n", mutated)
 
 	err := proto.Unmarshal(mutated, test)

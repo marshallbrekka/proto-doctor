@@ -1,7 +1,6 @@
 package pbdoctor
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -39,16 +38,19 @@ func TestDoctor(t *testing.T) {
 	}
 
 	data, _ := proto.Marshal(input)
-	mutated := Doctor(data, Dr{})
+	mutated, err := Doctor(data, Dr{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	output := &structpb.Value{}
-	err := proto.Unmarshal(mutated, output)
+	err = proto.Unmarshal(mutated, output)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(expected, output) {
+	if !proto.Equal(expected, output) {
 		t.Errorf("Expected:\n\t%#+v\nActual:\n\t%#+v", expected, output)
 	}
 }
@@ -60,7 +62,7 @@ func (d Dr) MessageMutator(n byte) Mutator {
 	return nil
 }
 
-func (d Dr) Mutate(f *Field) *Field {
+func (d Dr) Mutate(f *Field) (*Field, error) {
 	if f.Number == 3 {
 		return &Field{
 			// list value is 7
@@ -75,7 +77,7 @@ func (d Dr) Mutate(f *Field) *Field {
 					Data:   f.Data,
 				}.Serialize(),
 			}.Serialize(),
-		}
+		}, nil
 	}
-	return nil
+	return nil, nil
 }

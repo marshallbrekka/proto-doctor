@@ -1,43 +1,74 @@
 package pbdoctor
 
 import (
+	"io"
+
 	"github.com/golang/protobuf/proto"
 )
 
-func Doctor(data []byte, mutator Mutator) []byte {
+// Calls the provided mutator for every field in the serialized protobuf message,
+// modifying the byte array with any of the modifications the mutator makes.
+//
+// Returns an error if the provided byte array is not valid, or if the mutator
+// ever returns an error.
+//
+// If you provide a noop mutator, then this is essentially the same as iterating
+// through the structure with a Buffer, and re-assembling by calling Serialize()
+// on each field.
+//
+//   buf := NewBuffer(serialized)
+//   result := make([]byte, 0)
+//   for {
+//     field, _, err := buf.ReadField()
+//     if err == io.EOF {
+//       break
+//     }
+//     result = append(result, field.Serialize())
+//   }
+func Doctor(data []byte, mutator Mutator) ([]byte, error) {
 	return iterateFieldsDr(data, mutator)
 }
 
-func iterateFieldsDr(data []byte, dr Mutator) []byte {
+func iterateFieldsDr(data []byte, dr Mutator) ([]byte, error) {
 	result := make([]byte, 0, len(data))
 	var field *Field
 
 	buffer := NewBuffer(data)
 	for {
-		f, read := buffer.ReadField()
-		if read == 0 {
+		f, _, err := buffer.ReadField()
+		if err == io.EOF {
 			break
+		}
+		if err != nil {
+			return nil, err
 		}
 
 		if f.Type == proto.WireBytes {
 			subDr := dr.MessageMutator(f.Number)
 			if subDr != nil {
+				subData, err := iterateFieldsDr(f.Data, subDr)
+				if err != nil {
+					return nil, err
+				}
 				field = &Field{
 					Number: f.Number,
 					Type:   f.Type,
-					Data:   iterateFieldsDr(f.Data, subDr),
+					Data:   subData,
 				}
 			} else {
-				field = dr.Mutate(f)
+				field, err = dr.Mutate(f)
 			}
 		}
-		field = dr.Mutate(f)
+		field, err = dr.Mutate(f)
+		if err != nil {
+			return nil, err
+		}
 		if field == nil {
 			field = f
 		}
 		result = append(result, field.Serialize()...)
 	}
-	return result
+	return result, nil
 }
 
 // Given the proto tag, returns the field number and wire type.
