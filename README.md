@@ -40,7 +40,7 @@ When requests are received from the public internet, those `Internal<Type>` mess
 
 The metadata are not HTTP headers or anything, but state that is contextual to the user making the request.
 
-Similarly on responses back to the public internet, the API- Gatewayany uses any `metadata` that is present to update some internal state, and then zero's out the `metadata` before sending the response out to the net.
+Similarly on responses back to the public internet, the API-Gateway uses any `metadata` that is present to update some internal state, and then zero's out the `metadata` before sending the response out to the net.
 
 Internally this works quite well, as all downstream systems have access to a bunch of information automatically, without having to invoke additional APIs or build the metadata retrieval access themselves.
 
