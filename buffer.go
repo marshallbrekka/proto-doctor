@@ -1,10 +1,13 @@
 package pbdoctor
 
 import (
-	"fmt"
+	"errors"
+	"io"
 
 	"github.com/golang/protobuf/proto"
 )
+
+var errInternalBadWireType = errors.New("proto: internal error: bad wiretype")
 
 // Iterates through a serialized protocol buffer field by field.
 // Decscending into sub-messages requires initializing a new
@@ -20,47 +23,50 @@ func NewBuffer(b []byte) *Buffer {
 	}
 }
 
-// Reads the next field from the buffer. If the buffer is empty the bytes read will
-// be zero.
-func (b *Buffer) ReadField() (field *Field, read int) {
+// Reads the next field from the buffer, and returns the amount of bytes read.
+// If there are no more fields in the buffer an io.EOF error will be returned.
+func (b *Buffer) ReadField() (field *Field, read int, err error) {
 	if b.read == len(b.data) {
-		return nil, 0
+		return nil, 0, io.EOF
 	}
 
 	number, typ := ParseTag(b.data[b.read])
 	var length int
 	var value []byte
 
+	// All fields are offset by minimum 1 (the tag).
+	// Length delim types are 1 + <varint>
+	startOffset := 1
+
 	switch typ {
 	case proto.WireVarint:
-		// varint
 		length = varIntLength(b.data[b.read+1:])
-		value = b.data[b.read+1 : b.read+1+length]
-		field = &Field{number, typ, value}
 
 	case proto.WireFixed64:
-		// 64bit
 		length = 8
-		value = b.data[b.read+1 : b.read+1+length]
-		field = &Field{number, typ, value}
 
 	case proto.WireFixed32:
-		// 32bit
 		length = 4
-		value = b.data[b.read+1 : b.read+1+length]
-		field = &Field{number, typ, value}
 
 	case proto.WireBytes:
-		// length delim
-		var vi uint64
-		vi, length = proto.DecodeVarint(b.data[b.read+1:])
-		if length == 0 {
-			panic(fmt.Errorf("zero length varint"))
+		size, read := proto.DecodeVarint(b.data[b.read+startOffset:])
+		if read == 0 {
+			return nil, 0, io.ErrUnexpectedEOF
 		}
-		value = b.data[b.read+1+length : b.read+1+int(vi)+length]
-		length = length + int(vi)
-		field = &Field{number, typ, value}
+		length = int(size)
+		startOffset += read
+
+	default:
+		return nil, 0, errInternalBadWireType
 	}
-	b.read = b.read + length + 1
-	return field, length + 1
+
+	if length == 0 || b.read+startOffset+length > len(b.data) {
+		return nil, 0, io.ErrUnexpectedEOF
+	}
+
+	value = b.data[b.read+startOffset : b.read+startOffset+length]
+	field = &Field{number, typ, value}
+
+	b.read = b.read + startOffset + length
+	return field, startOffset + length, nil
 }
