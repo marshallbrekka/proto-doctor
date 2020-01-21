@@ -15,12 +15,12 @@ The protos below are not exactly my use-case, but should be a good enough exampl
 ```proto
 message InternalString {
   string value = 1;
-  map[string]string metadata = 2;
+  map<string, string> metadata = 2;
 }
 
 message InternalInt32 {
   int32 value = 1;
-  map[string]string metadata = 2;
+  map<string, string> metadata = 2;
 }
 
 
